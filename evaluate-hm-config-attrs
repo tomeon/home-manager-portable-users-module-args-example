@@ -1,0 +1,34 @@
+#!/bin/sh
+
+header() {
+    printf 1>&2 -- "\
+# =============================================================================
+%s
+# =============================================================================
+" "$*"
+
+}
+
+verbosely() {
+    header "\$ $*"
+    "$@"
+}
+
+if ! current_system="$(nix eval --impure --expr builtins.currentSystem 2>/dev/null)"; then
+    current_system=x86_64-linux
+fi
+
+attr_prefixes=(
+    hmConfig
+    "fupHmConfig.${current_system}"
+    "homeConfigurationsPortable.${current_system}.me"
+)
+
+for attr_prefix in "${attr_prefixes[@]}"; do
+    attr="${attr_prefix}.config.home.username"
+    if verbosely nix eval ".#${attr}"; then
+        header "[SUCCEEDED] ${attr}"
+    else
+        header "[FAILED] ${attr}"
+    fi
+done
